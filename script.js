@@ -6,6 +6,8 @@ const bag = [];
 let activeFilter = "All";
 let searchTerm = "";
 let toastTimer;
+let pendingOrderId = null;
+let paymentMethod = "mpesa";
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -78,6 +80,23 @@ function setBagOpen(open) {
   document.getElementById("overlay").classList.toggle("open", open);
   document.body.style.overflow = open ? "hidden" : "";
 }
+function renderPayment() {
+  const items = document.getElementById("paymentItems");
+  const total = bag.reduce((sum, item) => sum + products.find(product => product.id === item.id).price * item.quantity, 0);
+  items.innerHTML = bag.map(item => {
+    const product = products.find(entry => entry.id === item.id);
+    return `<div class="payment-item"><span>${product.name}<small>Qty ${item.quantity}</small></span><strong>${money(product.price * item.quantity)}</strong></div>`;
+  }).join("") || `<p class="form-note">Your bag is empty. <a href="#shop">Return to the collection.</a></p>`;
+  document.getElementById("paymentTotal").textContent = money(total);
+}
+function routePage() {
+  const booking = location.hash === "#booking";
+  const payment = location.hash === "#payment";
+  document.querySelectorAll(".page-view").forEach(page => { page.hidden = page.id === "bookingPage" ? !booking : !payment; });
+  document.querySelectorAll("main > section:not(.page-view), main > .ticker").forEach(section => { section.hidden = booking || payment; });
+  if (payment) renderPayment();
+  window.scrollTo(0, 0);
+}
 document.getElementById("filterRow").addEventListener("click", event => {
   const button = event.target.closest("[data-filter]");
   if (!button) return;
@@ -134,6 +153,47 @@ document.getElementById("newsletterForm").addEventListener("submit", async event
     button.disabled = false;
   }
 });
+document.getElementById("bookingForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector("button");
+  button.disabled = true;
+  try {
+    await api("/api/bookings", { method: "POST", body: JSON.stringify({ name: form.elements.name.value, email: form.elements.email.value, date: form.elements.date.value, time: form.elements.time.value, note: form.elements.note.value }) });
+    form.reset();
+    showToast("Your styling request is in. We will be in touch!");
+  } catch (error) { showToast(error.message); } finally { button.disabled = false; }
+});
+document.querySelectorAll("[data-payment-method]").forEach(button => button.addEventListener("click", () => {
+  paymentMethod = button.dataset.paymentMethod;
+  document.querySelectorAll("[data-payment-method]").forEach(methodButton => methodButton.classList.toggle("active", methodButton === button));
+  const mpesaFields = document.getElementById("mpesaFields");
+  const cardFields = document.getElementById("cardFields");
+  mpesaFields.hidden = paymentMethod !== "mpesa";
+  cardFields.hidden = paymentMethod !== "card";
+  mpesaFields.querySelector("input").required = paymentMethod === "mpesa";
+  cardFields.querySelectorAll("input").forEach(input => { input.required = paymentMethod === "card"; });
+}));
+document.getElementById("paymentForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!pendingOrderId) return showToast("Start checkout from your bag first");
+  const button = event.currentTarget.querySelector("button");
+  button.disabled = true;
+  try {
+    const result = await api("/api/payments", { method: "POST", body: JSON.stringify({
+      orderId: pendingOrderId,
+      method: paymentMethod,
+      phone: event.currentTarget.elements.mpesaPhone.value,
+      cardNumber: event.currentTarget.elements.cardNumber.value
+    }) });
+    bag.length = 0;
+    updateBag();
+    pendingOrderId = null;
+    event.currentTarget.reset();
+    location.hash = "top";
+    showToast(`Payment confirmed for order ${result.orderId}`);
+  } catch (error) { showToast(error.message); } finally { button.disabled = false; }
+});
 document.getElementById("checkoutForm").addEventListener("submit", async event => {
   event.preventDefault();
   if (!bag.length) return showToast("Your bag is empty");
@@ -149,11 +209,10 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
         items: bag.map(item => ({ productId: item.id, quantity: item.quantity }))
       })
     });
-    bag.length = 0;
-    updateBag();
     form.reset();
     setBagOpen(false);
-    showToast(`Order ${order.orderId} saved. Payment is not processed.`);
+    pendingOrderId = order.orderId;
+    location.hash = "payment";
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -168,3 +227,5 @@ api("/api/products").then(result => {
   document.getElementById("productCount").textContent = "";
 });
 updateBag();
+window.addEventListener("hashchange", routePage);
+routePage();

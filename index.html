@@ -124,6 +124,36 @@
     .checkout { width: 100%; }
     .checkout-form button:disabled, .newsletter-form button:disabled { cursor: wait; opacity: .6; }
     .checkout-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .page-view { max-width: 1240px; padding: 78px 5.2% 110px; margin: auto; }
+    .page-intro { max-width: 650px; margin-bottom: 54px; }
+    .page-intro h1 { margin: 0; font: 500 clamp(45px, 6vw, 78px)/1 var(--serif); letter-spacing: -.025em; }
+    .page-intro p:last-child { max-width: 430px; margin: 22px 0 0; color: var(--muted); font-size: 13px; line-height: 1.75; }
+    .booking-layout, .payment-layout { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(330px, .92fr); gap: clamp(35px, 8vw, 110px); align-items: start; }
+    .booking-art { position: relative; min-height: 520px; background: #e7ded4; }
+    .booking-art img { width: 100%; height: 100%; min-height: 520px; display: block; object-fit: cover; }
+    .booking-art span { position: absolute; left: 18px; bottom: 18px; padding: 10px 12px; background: var(--paper); font-size: 9px; letter-spacing: .12em; }
+    .page-form { display: grid; gap: 17px; padding-top: 8px; }
+    .form-heading { display: flex; gap: 17px; align-items: baseline; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+    .form-heading span { color: var(--coral); font-size: 11px; font-weight: 700; }
+    .form-heading h2 { margin: 0; font: 500 31px var(--serif); }
+    .page-form label { display: grid; gap: 7px; font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+    .page-form input, .page-form select, .page-form textarea { width: 100%; padding: 12px 11px; border: 1px solid var(--line); border-radius: 0; outline: none; background: transparent; color: var(--ink); font-size: 12px; resize: vertical; }
+    .page-form input:focus, .page-form select:focus, .page-form textarea:focus { border-color: var(--ink); }
+    .page-form .button-dark { margin-top: 4px; }
+    .form-note { margin: -5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .payment-summary { padding: 27px; background: #e8d8ce; }
+    .payment-summary .eyebrow { margin-bottom: 24px; }
+    .payment-item { display: flex; justify-content: space-between; gap: 20px; padding: 15px 0; border-bottom: 1px solid rgba(32,35,30,.15); font-size: 12px; }
+    .payment-item small { display: block; margin-top: 5px; color: var(--muted); }
+    .summary-total { display: flex; justify-content: space-between; margin: 22px 0 0; font-size: 14px; }
+    .payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .payment-method { min-height: 54px; padding: 10px 13px; border: 1px solid var(--line); background: transparent; text-align: left; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .payment-method.active { border-color: var(--ink); background: var(--ink); color: white; }
+    .payment-method small { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; font-weight: 400; }
+    .payment-method.active small { color: #d8ddd0; }
+    .payment-fields { display: grid; gap: 17px; }
+    .payment-fields[hidden] { display: none; }
     .toast { position: fixed; z-index: 40; left: 50%; bottom: 24px; padding: 13px 19px; background: var(--ink); color: white; font-size: 11px; opacity: 0; transform: translate(-50%, 12px); transition: .2s; pointer-events: none; }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
     @media (max-width: 850px) {
@@ -169,6 +199,11 @@
       .footer { padding: 28px 18px; flex-wrap: wrap; }
       .footer-links { order: 3; width: 100%; }
       .footer-copy { margin-left: auto; }
+      .page-view { padding: 55px 18px 75px; }
+      .page-intro { margin-bottom: 35px; }
+      .booking-layout, .payment-layout { grid-template-columns: 1fr; gap: 38px; }
+      .booking-art, .booking-art img { min-height: 330px; height: 330px; }
+      .payment-summary { order: -1; padding: 20px; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
   </style>
@@ -184,6 +219,7 @@
         <a href="#shop">SHOP ALL</a>
         <a href="#shop" data-nav-filter="New">NEW IN</a>
         <a href="#story">OUR STORY</a>
+        <a href="#booking">BOOK A STYLING</a>
       </nav>
       <a class="brand" href="#top" aria-label="Neit Accessories home">neit<small>ACCESSORIES</small></a>
       <div class="header-actions">
@@ -199,6 +235,36 @@
     <div class="search-panel" id="searchPanel"><input id="searchInput" type="search" placeholder="Search earrings, necklaces, rings..." aria-label="Search jewelry"></div>
   </header>
   <main id="top">
+    <section class="page-view booking-page" id="bookingPage" hidden>
+      <div class="page-intro"><p class="eyebrow">A little help, if you want it</p><h1>Make it personal.</h1><p>Book a one-on-one styling moment with a Neit stylist. We will help you find the pieces that feel like you.</p></div>
+      <div class="booking-layout">
+        <div class="booking-art"><img src="https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=1000&q=85" alt="Gold jewelry arranged for a styling appointment"><span>30 MINUTES · ONLINE OR IN STUDIO</span></div>
+        <form class="page-form" id="bookingForm">
+          <div class="form-heading"><span>01</span><h2>Choose your moment</h2></div>
+          <label>Your name<input name="name" autocomplete="name" maxlength="120" required></label>
+          <label>Email address<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          <label>Preferred date<input name="date" type="date" required></label>
+          <label>Time zone<select name="time" required><option value="">Choose a time</option><option>10:00 AM</option><option>12:30 PM</option><option>3:00 PM</option><option>5:30 PM</option></select></label>
+          <label>What are you shopping for?<textarea name="note" maxlength="500" rows="3" placeholder="A wedding guest look, an everyday layer, a gift..."></textarea></label>
+          <button class="button-dark" type="submit">Request appointment <span aria-hidden="true">→</span></button>
+          <p class="form-note">Free, relaxed, and no purchase required.</p>
+        </form>
+      </div>
+    </section>
+    <section class="page-view payment-page" id="paymentPage" hidden>
+      <div class="page-intro"><p class="eyebrow">Almost yours</p><h1>Finish the good part.</h1><p>Secure checkout for your Neit pieces. This demo records the payment status locally and never stores card details.</p></div>
+      <div class="payment-layout">
+        <form class="page-form" id="paymentForm">
+          <div class="form-heading"><span>02</span><h2>Payment details</h2></div>
+          <div class="payment-methods" role="group" aria-label="Payment method"><button type="button" class="payment-method active" data-payment-method="mpesa">M-Pesa <small>STK push</small></button><button type="button" class="payment-method" data-payment-method="card">Card <small>Visa / Mastercard</small></button></div>
+          <div class="payment-fields" id="mpesaFields"><label>M-Pesa phone number<input name="mpesaPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XX XXX XXX" pattern="(?:\+?254|0)7\d{8}" required></label><p class="form-note">You will receive an M-Pesa prompt on this number.</p></div>
+          <div class="payment-fields" id="cardFields" hidden><label>Cardholder name<input name="cardName" autocomplete="cc-name"></label><label>Card number<input name="cardNumber" inputmode="numeric" autocomplete="cc-number" minlength="12" maxlength="19" placeholder="4242 4242 4242 4242"></label><div class="form-row"><label>Expiry<input name="expiry" autocomplete="cc-exp" placeholder="MM / YY"></label><label>CVC<input name="cvc" inputmode="numeric" autocomplete="cc-csc" maxlength="4"></label></div></div>
+          <button class="button-dark" type="submit">Pay now <span aria-hidden="true">→</span></button>
+          <p class="form-note">Demo checkout only. No payment credentials are stored.</p>
+        </form>
+        <aside class="payment-summary"><p class="eyebrow">Your order</p><div id="paymentItems"></div><p class="summary-total"><span>Total</span><strong id="paymentTotal">$0.00</strong></p></aside>
+      </div>
+    </section>
     <section class="hero" aria-label="Featured collection">
       <div class="hero-copy">
         <p class="eyebrow">Made for the everyday extraordinary</p>
@@ -245,7 +311,7 @@
   </main>
   <footer class="footer">
     <a href="#top" class="footer-brand">neit.</a>
-    <div class="footer-links"><a href="#shop">Shop</a><a href="#story">Our story</a><a href="mailto:hello@neitaccessories.com">Contact</a></div>
+    <div class="footer-links"><a href="#shop">Shop</a><a href="#story">Our story</a><a href="#booking">Book a styling</a><a href="mailto:hello@neitaccessories.com">Contact</a></div>
     <span class="footer-copy">© 2026 Neit Accessories</span>
   </footer>
   <div class="overlay" id="overlay"></div>
@@ -258,7 +324,7 @@
         <label>Your name<input name="name" autocomplete="name" maxlength="120" required></label>
         <label>Email address<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
         <button class="button-dark checkout" id="checkoutButton" type="submit">Place order <span aria-hidden="true">→</span></button>
-        <p class="checkout-note">This creates a pending order. Payment is not collected.</p>
+        <p class="checkout-note">Next, you will review your order and complete payment.</p>
       </form>
     </div>
   </aside>

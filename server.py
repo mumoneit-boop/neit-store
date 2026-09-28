@@ -50,6 +50,15 @@ def initialize_database():
                 unit_price_cents INTEGER NOT NULL,
                 quantity INTEGER NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS bookings (
+                id TEXT PRIMARY KEY,
+                customer_name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                appointment_date TEXT NOT NULL,
+                appointment_time TEXT NOT NULL,
+                note TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
             """
         )
 
@@ -89,6 +98,10 @@ class StoreHandler(SimpleHTTPRequestHandler):
                 return self.subscribe(payload)
             if self.path == "/api/orders":
                 return self.create_order(payload)
+            if self.path == "/api/bookings":
+                return self.create_booking(payload)
+            if self.path == "/api/payments":
+                return self.process_payment(payload)
             return self.send_json(404, {"error": "Not found"})
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
             return self.send_json(400, {"error": "Invalid request"})
@@ -149,6 +162,50 @@ class StoreHandler(SimpleHTTPRequestHandler):
             "status": "pending_payment",
             "total": total_cents / 100,
         })
+
+    def create_booking(self, payload):
+        name = str(payload.get("name", "")).strip()
+        email = str(payload.get("email", "")).strip().lower()
+        appointment_date = str(payload.get("date", "")).strip()
+        appointment_time = str(payload.get("time", "")).strip()
+        note = str(payload.get("note", "")).strip()
+        if not name or len(name) > 120:
+            return self.send_json(400, {"error": "Enter your name"})
+        if len(email) > 254 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+            return self.send_json(400, {"error": "Enter a valid email address"})
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", appointment_date) or appointment_time not in {"10:00 AM", "12:30 PM", "3:00 PM", "5:30 PM"}:
+            return self.send_json(400, {"error": "Choose a valid appointment time"})
+        if len(note) > 500:
+            return self.send_json(400, {"error": "Your note is too long"})
+        booking_id = uuid4().hex[:10].upper()
+        with sqlite3.connect(DATABASE) as connection:
+            connection.execute(
+                "INSERT INTO bookings (id, customer_name, email, appointment_date, appointment_time, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (booking_id, name, email, appointment_date, appointment_time, note, datetime.now(timezone.utc).isoformat()),
+            )
+        return self.send_json(201, {"bookingId": booking_id, "status": "requested"})
+
+    def process_payment(self, payload):
+        order_id = str(payload.get("orderId", "")).strip().upper()
+        method = str(payload.get("method", "")).strip().lower()
+        if method not in {"mpesa", "card"}:
+            return self.send_json(400, {"error": "Choose a payment method"})
+        if method == "mpesa":
+            phone = re.sub(r"[\s-]+", "", str(payload.get("phone", "")))
+            if not re.fullmatch(r"(?:\+?254|0)7\d{8}", phone):
+                return self.send_json(400, {"error": "Enter a valid Kenyan M-Pesa number"})
+        else:
+            card_number = re.sub(r"\s+", "", str(payload.get("cardNumber", "")))
+            if not re.fullmatch(r"\d{12,19}", card_number):
+                return self.send_json(400, {"error": "Enter a valid test card number"})
+        with sqlite3.connect(DATABASE) as connection:
+            order = connection.execute("SELECT status FROM orders WHERE id = ?", (order_id,)).fetchone()
+            if not order:
+                return self.send_json(404, {"error": "Order not found"})
+            if order[0] != "pending_payment":
+                return self.send_json(400, {"error": "This order has already been paid"})
+            connection.execute("UPDATE orders SET status = ? WHERE id = ?", ("paid", order_id))
+        return self.send_json(200, {"orderId": order_id, "method": method, "status": "paid"})
 
     def log_message(self, format_string, *args):
         print("%s - %s" % (self.address_string(), format_string % args))
