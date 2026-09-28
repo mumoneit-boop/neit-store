@@ -1,13 +1,4 @@
-const products = [
-  { id: 1, name: "The Sunday Hoops", category: "Earrings", price: 38, detail: "Gold-plated · A little everyday shine", tag: "Bestseller", image: "photo-1617038220319-276d3cfab638" },
-  { id: 2, name: "Pearl of a Moment", category: "Necklaces", price: 52, detail: "Freshwater pearl · 18 in chain", tag: "New", image: "photo-1611652022419-a9419f74343d" },
-  { id: 3, name: "A Little Signet", category: "Rings", price: 44, detail: "Recycled brass · Adjustable", tag: "Just in", image: "photo-1605100804763-247f67b3557e" },
-  { id: 4, name: "Golden Hour Cuff", category: "Bracelets", price: 48, detail: "Sculptural gold · One size", tag: "", image: "photo-1611591437281-460bfbe1220a" },
-  { id: 5, name: "The Daydream Drops", category: "Earrings", price: 42, detail: "Gold vermeil · Lightweight", tag: "New", image: "photo-1535632066927-ab7c9ab60908" },
-  { id: 6, name: "Little Orbit Pendant", category: "Necklaces", price: 56, detail: "Gold-plated · 16 in + extender", tag: "", image: "photo-1611085583191-a3b181a88401" },
-  { id: 7, name: "Twist & Shout", category: "Rings", price: 36, detail: "Textured gold · Stackable", tag: "Bestseller", image: "photo-1603561596112-0a132b757442" },
-  { id: 8, name: "The Nice One", category: "Bracelets", price: 50, detail: "Mixed metal · Easy clasp", tag: "", image: "photo-1611652022419-a9419f74343d" }
-];
+let products = [];
 const money = value => `$${value.toFixed(2)}`;
 const imageUrl = (id, width = 720) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=82`;
 const grid = document.getElementById("productGrid");
@@ -15,6 +6,16 @@ const bag = [];
 let activeFilter = "All";
 let searchTerm = "";
 let toastTimer;
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...options.headers }
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || "Something went wrong");
+  return result;
+}
 
 function renderProducts() {
   const visible = products.filter(product => {
@@ -115,11 +116,55 @@ document.querySelectorAll("#mainNav a").forEach(link => link.addEventListener("c
   document.getElementById("mainNav").classList.remove("open");
   document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
 }));
-document.getElementById("newsletterForm").addEventListener("submit", event => {
+document.getElementById("newsletterForm").addEventListener("submit", async event => {
   event.preventDefault();
-  event.currentTarget.reset();
-  showToast("You're on the list. Talk soon!");
+  const form = event.currentTarget;
+  const button = form.querySelector("button");
+  button.disabled = true;
+  try {
+    await api("/api/newsletter", {
+      method: "POST",
+      body: JSON.stringify({ email: form.querySelector("input").value })
+    });
+    form.reset();
+    showToast("You're on the list. Talk soon!");
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
 });
-document.getElementById("checkoutButton").addEventListener("click", () => showToast("Checkout is coming soon"));
-renderProducts();
+document.getElementById("checkoutForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!bag.length) return showToast("Your bag is empty");
+  const form = event.currentTarget;
+  const button = document.getElementById("checkoutButton");
+  button.disabled = true;
+  try {
+    const order = await api("/api/orders", {
+      method: "POST",
+      body: JSON.stringify({
+        name: form.elements.name.value,
+        email: form.elements.email.value,
+        items: bag.map(item => ({ productId: item.id, quantity: item.quantity }))
+      })
+    });
+    bag.length = 0;
+    updateBag();
+    form.reset();
+    setBagOpen(false);
+    showToast(`Order ${order.orderId} saved. Payment is not processed.`);
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+api("/api/products").then(result => {
+  products = result.products;
+  renderProducts();
+}).catch(() => {
+  grid.innerHTML = '<p class="empty-state">The collection could not be loaded. Please refresh and try again.</p>';
+  document.getElementById("productCount").textContent = "";
+});
 updateBag();

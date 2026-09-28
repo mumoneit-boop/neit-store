@@ -118,7 +118,12 @@
     .bag-item p { margin: 0; color: var(--muted); font-size: 11px; }
     .remove-item { margin-top: 9px; padding: 0; border: 0; border-bottom: 1px solid var(--muted); background: none; color: var(--muted); font-size: 9px; cursor: pointer; }
     .bag-total { display: flex; justify-content: space-between; margin: 0 0 14px; font-size: 13px; }
+    .checkout-form { display: grid; gap: 12px; }
+    .checkout-form label { display: grid; gap: 5px; font-size: 10px; font-weight: 600; }
+    .checkout-form input { width: 100%; min-height: 39px; padding: 0 10px; border: 1px solid var(--line); background: transparent; font-size: 12px; }
     .checkout { width: 100%; }
+    .checkout-form button:disabled, .newsletter-form button:disabled { cursor: wait; opacity: .6; }
+    .checkout-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
     .toast { position: fixed; z-index: 40; left: 50%; bottom: 24px; padding: 13px 19px; background: var(--ink); color: white; font-size: 11px; opacity: 0; transform: translate(-50%, 12px); transition: .2s; pointer-events: none; }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
     @media (max-width: 850px) {
@@ -247,7 +252,15 @@
   <aside class="bag-panel" id="bagPanel" aria-label="Shopping bag" aria-hidden="true">
     <div class="bag-header"><h2>Your bag <span id="bagHeadingCount">(0)</span></h2><button class="icon-button" id="bagClose" aria-label="Close shopping bag"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
     <div class="bag-items" id="bagItems"></div>
-    <div class="bag-footer"><p class="bag-total"><span>Subtotal</span><strong id="bagSubtotal">$0.00</strong></p><button class="button-dark checkout" id="checkoutButton">Continue to checkout <span aria-hidden="true">→</span></button></div>
+    <div class="bag-footer">
+      <p class="bag-total"><span>Subtotal</span><strong id="bagSubtotal">$0.00</strong></p>
+      <form class="checkout-form" id="checkoutForm">
+        <label>Your name<input name="name" autocomplete="name" maxlength="120" required></label>
+        <label>Email address<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+        <button class="button-dark checkout" id="checkoutButton" type="submit">Place order <span aria-hidden="true">→</span></button>
+        <p class="checkout-note">This creates a pending order. Payment is not collected.</p>
+      </form>
+    </div>
   </aside>
   <div class="toast" id="toast" role="status"></div>
   <script src="script.js" defer></script>
